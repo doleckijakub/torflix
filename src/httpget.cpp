@@ -4,6 +4,8 @@
 
 #include <curl/curl.h>
 
+#include <crow/logging.h>
+
 static int writer(char *data, size_t size, size_t nmemb, std::string *writer_data) {
 	if(writer_data == NULL) return 0;
 	writer_data->append(data, size * nmemb);
@@ -27,6 +29,8 @@ static bool initialized_curl = false;
 } while(0)
 
 std::string httpget(const std::string &url) {
+	CROW_LOG_INFO << __func__ << "(" << url << ")";
+
 	if(!initialized_curl) {
 		curl_global_init(CURL_GLOBAL_DEFAULT);
 		initialized_curl = true;
