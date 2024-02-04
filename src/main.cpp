@@ -13,15 +13,15 @@
 
 static std::string get_exec_path() {
 #if defined(_WIN32)
-    char buffer[MAX_PATH];
-    GetModuleFileNameA(nullptr, buffer, MAX_PATH);
-    return buffer;
+	char buffer[MAX_PATH];
+	GetModuleFileNameA(nullptr, buffer, MAX_PATH);
+	return buffer;
 #elif defined(__linux__) || defined(__APPLE__)
-    char buffer[PATH_MAX];
-    ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
-    assert(len != -1);
-    buffer[len] = '\0';
-    return buffer;
+	char buffer[PATH_MAX];
+	ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
+	assert(len != -1);
+	buffer[len] = '\0';
+	return buffer;
 #else
 #	error "Unknown OS"
 #endif
@@ -34,6 +34,11 @@ static std::string get_base_path() {
 		.string();
 }
 
+namespace route {
+	crow::response index();
+	crow::response search(const char *query);
+}
+
 int main() {
 	crow::SimpleApp app;
 
@@ -43,10 +48,21 @@ int main() {
 
 	CROW_ROUTE(app, "/")
 		.methods("GET"_method)
+		([]() {
+			return route::index();
+		});
+
+	CROW_ROUTE(app, "/search")
+		.methods("GET"_method)
 		([](const crow::request &req) {
-			auto index = crow::mustache::load("html/index.html")
-				.render();
-			return crow::response(index);
+			auto query = req.url_params.get("q");
+			if (query) {
+				return route::search(query);
+			} else {
+				crow::response res;
+				res.redirect("/");
+				return res;
+			}
 		});
 	
 	app.port(8080).multithreaded().run();
