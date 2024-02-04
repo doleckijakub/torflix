@@ -8,7 +8,8 @@ OBJ_FILES = $(patsubst src/%.cpp, $(BUILD)/%.o, $(SRC_FILES))
 SRC := src
 CPP := g++
 CPP_FLAGS += -I vendor/crow/include
-LD_FLAGS += 
+CPP_FLAGS += -I vendor/curl/include
+LD_FLAGS += -L vendor/curl/lib -lcurl
 
 $(BUILD):
 	mkdir -p $@
