@@ -37,6 +37,7 @@ static std::string get_base_path() {
 namespace route {
 	crow::response index();
 	crow::response search(const char *query);
+	crow::response stream(const std::string &info_hash);
 }
 
 int main() {
@@ -63,6 +64,12 @@ int main() {
 				res.redirect("/");
 				return res;
 			}
+		});
+
+	CROW_ROUTE(app, "/stream/<string>")
+		.methods("GET"_method)
+		([](const std::string &info_hash) {
+			return route::stream(info_hash);
 		});
 	
 	app.port(8080).multithreaded().run();
