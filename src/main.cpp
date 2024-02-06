@@ -40,14 +40,36 @@ namespace route {
 	crow::response stream(const std::string &info_hash);
 }
 
+#define COLORED_LOG_MESSAGES 1
+
 class Logger : public crow::ILogHandler {
 	const char *to_str(crow::LogLevel level) {
 		switch (level) {
+#if COLORED_LOG_MESSAGES
+#	define ANSI_RESET        "\x1b[0m"
+#	define ANSI_RGB(r, g, b) "\x1b[38;2;"#r";"#g";"#b"m"
+#	define ANSI_DEBUG    ANSI_RGB(0, 127, 0)
+#	define ANSI_INFO     ANSI_RGB(0, 127, 255)
+#	define ANSI_WARNING  ANSI_RGB(255, 166, 0)
+#	define ANSI_ERROR    ANSI_RGB(255, 0, 0)
+#	define ANSI_CRITICAL ANSI_RGB(127, 0, 127)
+			case crow::LogLevel::Debug:
+				return ANSI_DEBUG "Debug" ANSI_RESET;
+        	case crow::LogLevel::Info:
+				return ANSI_INFO "Info" ANSI_RESET;
+        	case crow::LogLevel::Warning:
+				return ANSI_WARNING "Warning" ANSI_RESET;
+        	case crow::LogLevel::Error:
+				return ANSI_ERROR "Error" ANSI_RESET;
+        	case crow::LogLevel::Critical:
+				return ANSI_CRITICAL "Critical" ANSI_RESET;
+#else
 			case crow::LogLevel::Debug: return "Debug";
         	case crow::LogLevel::Info: return "Info";
         	case crow::LogLevel::Warning: return "Warning";
         	case crow::LogLevel::Error: return "Error";
         	case crow::LogLevel::Critical: return "Critical";
+#endif
 		}
 
 		assert(0 && "unreachable");
