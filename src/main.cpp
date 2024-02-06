@@ -40,7 +40,32 @@ namespace route {
 	crow::response stream(const std::string &info_hash);
 }
 
+class Logger : public crow::ILogHandler {
+	const char *to_str(crow::LogLevel level) {
+		switch (level) {
+			case crow::LogLevel::Debug: return "Debug";
+        	case crow::LogLevel::Info: return "Info";
+        	case crow::LogLevel::Warning: return "Warning";
+        	case crow::LogLevel::Error: return "Error";
+        	case crow::LogLevel::Critical: return "Critical";
+		}
+
+		assert(0 && "unreachable");
+	}
+
+public:
+
+	Logger() {}
+
+	void log(std::string message, crow::LogLevel level) {
+		std::cerr << "[" << to_str(level) << "] " << message << std::endl;
+	}
+};
+
 int main() {
+	Logger logger;
+	crow::logger::setHandler(&logger);
+
 	crow::SimpleApp app;
 
 	std::string base_path = get_base_path();
