@@ -1,4 +1,5 @@
 #include <crow/http_response.h>
+#include <crow/mustache.h>
 
 #include <rapidjson/document.h>
 
@@ -32,15 +33,17 @@ std::string url_param_encode(const std::string& input) {
 namespace route {
 
 crow::response search(const char *query) {
-	using namespace std::string_literals;
+	const static auto page = crow::mustache::load("html/search.html");
 	
+	using namespace std::string_literals;
+
 	auto apibay_resp = httpget(
 		"https://apibay.org/q.php?q="s +
 		url_param_encode(query) +
 		"&cat=0"s
 	);
 
-	std::string resp;
+	std::string contents;
 
 	rapidjson::Document doc;
 	doc.Parse(apibay_resp.c_str());
@@ -51,10 +54,14 @@ crow::response search(const char *query) {
 		std::string name = rj_str(entry, "name");
 		std::string info_hash = rj_str(entry, "info_hash");
 		
-		resp += "<a href=\"/stream/"s + info_hash + "\">" + name + "</a><br>";
+		contents += "<a href=\"/stream/"s + info_hash + "\">" + name + "</a><br>";
 	}
+	
+	crow::mustache::context ctx;
+	ctx["query"] = query;
+	ctx["contents"] = contents;
 
-	return crow::response(resp);
+	return crow::response(page.render(ctx));
 }
 
 }
