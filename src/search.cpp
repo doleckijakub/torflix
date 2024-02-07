@@ -4,6 +4,7 @@
 #include <rapidjson/document.h>
 
 #include "httpget.hpp"
+#include "database.hpp"
 
 #include <iomanip>
 #include <sstream>
@@ -44,11 +45,11 @@ static std::string assert_getenv(const char *name) {
 	return env;
 }
 
-struct TitleInfo {
-	std::string title, year, runtime, plot, img_src;
-};
-
 static TitleInfo get_title_info(const std::string &imdb_id, const std::string &omdb_api_key) {
+	if (Database::has_title(imdb_id)) {
+		return Database::get_title(imdb_id);
+	}
+
 	using namespace std::string_literals;
 	
 	const auto omdb_resp = httpget(
@@ -62,13 +63,17 @@ static TitleInfo get_title_info(const std::string &imdb_id, const std::string &o
 	doc.Parse(omdb_resp.c_str());
 	assert(doc.IsObject());
 
-	return TitleInfo {
+	TitleInfo title_info {
 		title:   rj_str(doc, "Title"),
 		year:    rj_str(doc, "Year"),
 		runtime: rj_str(doc, "Runtime"),
 		plot:    rj_str(doc, "Plot"),
 		img_src: rj_str(doc, "Poster")
 	};
+
+	Database::add_title(imdb_id, title_info);
+
+	return title_info;
 }
 
 namespace route {
@@ -85,11 +90,6 @@ crow::response search(const char *query) {
 		url_param_encode(query) +
 		"&cat=0"s
 	);
-
-	struct TorrentInfo {
-		std::string name;
-		std::string info_hash;
-	};
 
 	std::unordered_map<std::string, std::vector<TorrentInfo>> torrents;
 	std::unordered_map<std::string, std::future<TitleInfo>> title_infos;
@@ -114,12 +114,17 @@ crow::response search(const char *query) {
 	
 	std::string search_results;
 	for(const auto &[imdb, torrent_infos] : torrents) {
-		crow::mustache::context ctx;
 		TitleInfo title_info = title_infos.at(imdb).get();
+		crow::mustache::context ctx;
+
 		ctx["title"] = title_info.title;
-		ctx["num_torrents"] = std::to_string(torrent_infos.size());
+		ctx["year"] =  title_info.year;
+		ctx["runtime"] =  title_info.runtime;
 		ctx["img_src"] = title_info.img_src;
 		ctx["plot"] = title_info.plot;
+		
+		ctx["num_torrents"] = std::to_string(torrent_infos.size());
+		
 		search_results += search_result.render_string(ctx);
 	}
 
