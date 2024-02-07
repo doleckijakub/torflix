@@ -7,6 +7,9 @@
 [submodule "vendor/rapidjson"]
 	path = vendor/rapidjson
 	url = https://github.com/Tencent/rapidjson
-[submodule "vendor/sqlitecpp"]
-	path = vendor/sqlitecpp
-	url = https://github.com/SRombauts/SQLiteCpp
+[submodule "vendor/sqlite3pp"]
+	path = vendor/sqlite3pp
+	url = https://github.com/iwongu/sqlite3pp
+[submodule "vendor/sqlite"]
+	path = vendor/sqlite
+	url = https://github.com/clibs/sqlite
