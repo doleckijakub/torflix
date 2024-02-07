@@ -11,6 +11,7 @@
 #include <cassert>
 #include <unordered_map>
 #include <vector>
+#include <future>
 
 std::string url_param_encode(const std::string& input) {
 	std::ostringstream encoded;
@@ -32,7 +33,7 @@ std::string url_param_encode(const std::string& input) {
 
 #define rj_str(e, k) e.HasMember(k) ? (assert(e[k].IsString()), e[k].GetString()) : ""
 
-std::string assert_getenv(const char *name) {
+static std::string assert_getenv(const char *name) {
 	const char *env = getenv(name);
 	
 	if (env == nullptr) {
@@ -41,6 +42,33 @@ std::string assert_getenv(const char *name) {
 	}
 
 	return env;
+}
+
+struct TitleInfo {
+	std::string title, year, runtime, plot, img_src;
+};
+
+static TitleInfo get_title_info(const std::string &imdb_id, const std::string &omdb_api_key) {
+	using namespace std::string_literals;
+	
+	const auto omdb_resp = httpget(
+		"https://www.omdbapi.com/?i="s +
+		imdb_id + 
+		"&apikey="s +
+		omdb_api_key
+	);
+
+	rapidjson::Document doc;
+	doc.Parse(omdb_resp.c_str());
+	assert(doc.IsObject());
+
+	return TitleInfo {
+		title:   rj_str(doc, "Title"),
+		year:    rj_str(doc, "Year"),
+		runtime: rj_str(doc, "Runtime"),
+		plot:    rj_str(doc, "Plot"),
+		img_src: rj_str(doc, "Poster")
+	};
 }
 
 namespace route {
@@ -64,6 +92,7 @@ crow::response search(const char *query) {
 	};
 
 	std::unordered_map<std::string, std::vector<TorrentInfo>> torrents;
+	std::unordered_map<std::string, std::future<TitleInfo>> title_infos;
 
 	rapidjson::Document doc;
 	doc.Parse(apibay_resp.c_str());
@@ -77,16 +106,20 @@ crow::response search(const char *query) {
 
 		if(imdb.length()) {
 			torrents[imdb].emplace_back(TorrentInfo { name, info_hash });
-		}	
+			if (title_infos.find(imdb) == title_infos.end()) {
+				title_infos.emplace(imdb, std::async(&get_title_info, imdb, omdb_api_key));
+			}
+		}
 	}
 	
 	std::string search_results;
 	for(const auto &[imdb, torrent_infos] : torrents) {
 		crow::mustache::context ctx;
-		ctx["title"] = torrent_infos[0].name; // TODO: omdb api
+		TitleInfo title_info = title_infos.at(imdb).get();
+		ctx["title"] = title_info.title;
 		ctx["num_torrents"] = std::to_string(torrent_infos.size());
-		ctx["img_src"] = ""; // TODO: obdb api
-		ctx["plot"] = "plot here"; // TODO: omdb api
+		ctx["img_src"] = title_info.img_src;
+		ctx["plot"] = title_info.plot;
 		search_results += search_result.render_string(ctx);
 	}
 
