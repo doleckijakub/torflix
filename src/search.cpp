@@ -104,8 +104,9 @@ crow::response search(const char *query) {
 		std::string name = rj_str(entry, "name");
 		std::string info_hash = rj_str(entry, "info_hash");
 		std::string imdb = rj_str(entry, "imdb");
+		int seeders = std::stoi(rj_str(entry, "seeders"));
 
-		if(imdb.length()) {
+		if(seeders && imdb.length()) {
 			torrents[imdb].emplace_back(TorrentInfo { name, info_hash });
 			if (title_infos.find(imdb) == title_infos.end()) {
 				title_infos.emplace(imdb, std::async(&get_title_info, imdb));
