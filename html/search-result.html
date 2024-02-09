@@ -1,9 +1,14 @@
 <div class="torrent_title">
 	<img src="{{img_src}}" alt="{{title}}">
 	<div class="details">
-		<h1>{{title}}</h1> <p>{{year}}</p>
-		<p class="num_torrents">{{num_torrents}}</p>
-		<p>{{runtime}}</p>
+		<p><b>{{title}}</b> <small>{{year}}</small> <small>{{runtime}}</small></p>
+		<small><span class="num_seeders">{{num_seeders}}</span> seeders in <span class="num_torrents">{{num_torrents}}</span> torrents</small>
 		<p>{{plot}}</p>
+		<details>
+			<summary>Watch here</summary>
+			<table>
+				{{{stream_urls}}}
+			</table>
+		</details>
 	</div>
 </div>

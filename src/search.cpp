@@ -127,7 +127,24 @@ crow::response search(const char *query) {
 		
 		ctx["imdb_id"] = imdb;
 		ctx["num_torrents"] = std::to_string(torrent_infos.size());
-		
+	
+		{
+			std::string stream_urls;
+			for (const auto &torrent_info : torrent_infos)
+				stream_urls +=
+					"<tr>"s +
+						"<td>"s +
+							"<a href=\"/stream/"s + torrent_info.info_hash + "\">"s +
+								torrent_info.name + 
+							"</a>"s + 
+						"</td>"s + 
+						"<td>"s +
+							"-1"s +
+						"</td>"s + 
+					"</tr>"s;
+			ctx["stream_urls"] = stream_urls;
+		}
+
 		search_results += search_result.render_string(ctx);
 	}
 
