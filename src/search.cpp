@@ -45,7 +45,9 @@ static std::string assert_getenv(const char *name) {
 	return env;
 }
 
-static TitleInfo get_title_info(const std::string &imdb_id, const std::string &omdb_api_key) {
+static TitleInfo get_title_info(const std::string &imdb_id) {
+	const static auto omdb_api_key = assert_getenv("OMDB_API_KEY");
+
 	if (Database::has_title(imdb_id)) {
 		return Database::get_title(imdb_id);
 	}
@@ -81,7 +83,6 @@ namespace route {
 crow::response search(const char *query) {
 	const static auto page = crow::mustache::load("html/search.html");
 	const static auto search_result = crow::mustache::load("html/search-result.html");
-	const static auto omdb_api_key = assert_getenv("OMDB_API_KEY");
 	
 	using namespace std::string_literals;
 
@@ -107,7 +108,7 @@ crow::response search(const char *query) {
 		if(imdb.length()) {
 			torrents[imdb].emplace_back(TorrentInfo { name, info_hash });
 			if (title_infos.find(imdb) == title_infos.end()) {
-				title_infos.emplace(imdb, std::async(&get_title_info, imdb, omdb_api_key));
+				title_infos.emplace(imdb, std::async(&get_title_info, imdb));
 			}
 		}
 	}
@@ -123,6 +124,7 @@ crow::response search(const char *query) {
 		ctx["img_src"] = title_info.img_src;
 		ctx["plot"] = title_info.plot;
 		
+		ctx["imdb_id"] = imdb;
 		ctx["num_torrents"] = std::to_string(torrent_infos.size());
 		
 		search_results += search_result.render_string(ctx);
