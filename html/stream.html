@@ -13,8 +13,9 @@
 		const socket = new WebSocket('ws://localhost:8080/ws/{{info_hash}}');
 
 		socket.addEventListener('message', (event) => {
+			console.log(event)
 			if (event.data instanceof Blob) {
-				const blob = new Blob([event.data], { type: 'video/mp4' });
+				const blob = new Blob([event.data], { type: 'video/mkv' });
 				const videoURL = URL.createObjectURL(blob);
 				videoElement.src = videoURL;
 			}
