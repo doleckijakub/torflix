@@ -3,6 +3,7 @@
 #include <string>
 #include <cassert>
 #include <filesystem>
+#include <functional>
 
 #if defined(_WIN32)
 #	include <Windows.h>
@@ -38,6 +39,11 @@ namespace route {
 	crow::response index();
 	crow::response search(const char *query);
 	crow::response stream(const std::string &info_hash);
+}
+
+namespace stream_handler {
+	void onopen(const std::string &info_hash, std::function<void(const std::string&)> send_binary);
+	void onclose(const std::string &info_hash);
 }
 
 #define COLORED_LOG_MESSAGES 1
@@ -117,6 +123,33 @@ int main() {
 		.methods("GET"_method)
 		([](const std::string &info_hash) {
 			return route::stream(info_hash);
+		});
+
+	using conn_t = crow::websocket::connection;
+	CROW_ROUTE(app, "/ws/<string>")
+		.websocket(&app)
+		.onaccept([](const crow::request& req, void** userdata) -> bool {
+			CROW_LOG_INFO << "onaccept " << req.url;
+			*userdata = new std::string;
+			*((std::string*) *userdata) = req.url.substr(4, 40);
+			if (((std::string*) *userdata)->length() != 40) return false;
+			return true;
+		})
+		.onopen([](conn_t& conn) {
+			const std::string &info_hash = *(std::string*) conn.userdata();
+			CROW_LOG_INFO << "onopen " << info_hash;
+			
+			auto send_binary = [&conn](const std::string &data) {
+				conn.send_binary(data);
+			};
+
+			stream_handler::onopen(info_hash, send_binary);
+		})
+		.onclose([](conn_t& conn, const std::string& reason) {
+			const std::string &info_hash = *(std::string*) conn.userdata();
+			CROW_LOG_INFO << "onclose " << info_hash;
+			stream_handler::onclose(info_hash);
+			delete (std::string*) conn.userdata();
 		});
 	
 	app.port(8080).multithreaded().run();

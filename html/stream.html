@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Torflix: {{title}}</title>
+</head>
+<body>
+	<video id="video" controls></video>
+	<script>
+		const videoElement = document.getElementById('video');
+
+		const socket = new WebSocket('ws://localhost:8080/ws/{{info_hash}}');
+
+		socket.addEventListener('message', (event) => {
+			if (event.data instanceof Blob) {
+				const blob = new Blob([event.data], { type: 'video/mp4' });
+				const videoURL = URL.createObjectURL(blob);
+				videoElement.src = videoURL;
+			}
+		});
+	</script>
+</body>
+</html>
+
