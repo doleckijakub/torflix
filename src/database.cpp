@@ -2,6 +2,17 @@
 
 #include <crow.h>
 
+Database::Database(const char *db_name) : db(db_name) {
+	sqlite3pp::command cmd(db, "CREATE TABLE IF NOT EXISTS omdb ("
+		"id VARCHAR(10) PRIMARY KEY,"
+		"title VARCHAR(256),"
+		"year INTEGER,"
+		"runtime INTEGER,"
+		"plot VARCHAR(1024),"
+		"img_src VARCHAR(256)"
+	")");
+}
+
 Database &Database::get_instance() {
 	static Database instance("database.db");
 	return instance;

@@ -27,7 +27,7 @@ private:
 
 	sqlite3pp::database db;
 
-	Database(const char *db_name) : db(db_name) {}
+	Database(const char *db_name);
 
 	static Database &get_instance();
 };
